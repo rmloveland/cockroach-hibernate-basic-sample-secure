@@ -1,0 +1,68 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use autodie;
+use experimentals;
+use Config::INI::Reader;
+use Data::Dumper;
+
+die qq[Usage: gen-cluster-certs [FILE.CONF]] unless scalar @ARGV > 0;
+my $ini_file = shift;
+
+$ini_file //= qq[$ENV{HOME}/.gen-cluster-certs.conf];
+
+my $DEBUG   = 0;
+my $VERBOSE = 0;
+$VERBOSE++ if $DEBUG;
+
+my $version = $ENV{COCKROACH_VERSION};
+$version = '2.0' unless defined $version;
+
+my $crdb_bin   = qq[$ENV{HOME}/work/binaries/v$version/cockroach];
+my $cmd_prefix = qq[$crdb_bin cert];
+
+my $config = Config::INI::Reader->read_file($ini_file);
+
+say Dumper $config if $DEBUG;
+
+# https://www.cockroachlabs.com/docs/stable/create-security-certificates.html
+
+# file locations
+my $ca_key = $ENV{COCKROACH_CA_KEY};
+$ca_key = $config->{ca_key}->{location} unless defined $ca_key;
+my $certs_dir = $config->{certs_dir}->{location};
+
+# create ca cert
+
+my $create_ca =
+  qq[$cmd_prefix $config->{ca}->{cmd} --certs-dir=$certs_dir --ca-key=$ca_key];
+
+say $create_ca if $VERBOSE;
+unless ($DEBUG) {
+
+    # You don't need to create a CA.CRT if it already exists
+    unless ( -e $ca_key ) {
+        system $create_ca;
+    }
+}
+
+# create node certs
+
+my $nodes = $config->{nodes};
+my @nodes = keys %$nodes;
+@nodes = grep { $_ !~ /cmd/ } @nodes;
+
+for my $node (@nodes) {
+    my $create_node =
+qq[$cmd_prefix $config->{nodes}->{cmd} $config->{nodes}->{$node} --certs-dir=$certs_dir --ca-key=$ca_key --overwrite];
+    say $create_node if $VERBOSE;
+    system $create_node unless $DEBUG;
+}
+
+# create client cert
+
+my $create_client =
+qq[$cmd_prefix $config->{client}->{cmd} root --certs-dir=$certs_dir --ca-key=$ca_key];
+say $create_client if $VERBOSE;
+system $create_client unless $DEBUG;

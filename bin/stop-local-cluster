@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use autodie;
+use File::Path qw/ remove_tree /;
+
+my $cmd = qq[pkill cockroach];
+system($cmd);
+
+my $VERBOSE = undef;
+
+chdir $ENV{TMPDIR};
+my @store_dirs = glob "node*";
+for my $dir (@store_dirs) {
+    remove_tree( $dir, { verbose => $VERBOSE, safe => 1, } );
+}

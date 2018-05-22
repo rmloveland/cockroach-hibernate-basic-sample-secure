@@ -1,0 +1,153 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use feature qw/ say /;
+use Getopt::Long;
+use Socket;
+use POSIX;
+use List::Util qw/ all /;
+
+my $nodes = 3;
+my $DEBUG;
+my $VERBOSE;
+my $is_secure;
+my $help_wanted;
+
+$help_wanted++ unless scalar @ARGV >= 1;
+
+my $help = <<"EOF";
+Usage: start-local-cluster [--{secure,debug,verbose}] --nodes=3
+EOF
+
+GetOptions(
+    "nodes=i" => \$nodes,
+    "debug"   => \$DEBUG,
+    "verbose" => \$VERBOSE,
+    "secure"  => \$is_secure,
+    "help"    => \$help_wanted,
+) or die qq[$help];
+
+if ($help_wanted) {
+    say $help;
+    exit;
+}
+
+my $TMPDIR = $ENV{TMPDIR};
+$TMPDIR =~ s{/$}{};
+
+$ENV{COCKROACH_PORT} //= 26257;
+my $crdb_port = $ENV{COCKROACH_PORT};
+
+my $crdb_bin = qq[$ENV{HOME}/work/binaries/v$ENV{COCKROACH_VERSION}/cockroach];
+
+my $secure_flag = $is_secure ? qq[--certs-dir=/tmp/certs] : q[--insecure];
+
+sub build_join_argument_string {
+    ## Array -> Array[String]
+    my @http_ports = @_;
+
+    my $result = join ',', map { qq[localhost:$_] } @http_ports;
+
+    return $result;
+}
+
+# start up the nodes!
+
+sub start_nodes {
+    my $nodes = shift;
+  NODE: for my $n ( 0 .. ( $nodes - 1 ) ) {
+        my $node      = qq[node$n];
+        my $http_port = 8888 + $n;
+        my $min       = $crdb_port;
+        my $port      = $min + $n;
+        my $max       = $min + $nodes;
+
+        my @ports = ( $min ... ( $max - 1 ) );
+        my $port_in_use_p = port_in_use_p($port);
+
+        if ($port_in_use_p) {
+            say qq[VERBOSE:\nSKIPPING - PORT $port - IN USE: $port_in_use_p\n]
+              if $VERBOSE;
+            next NODE;
+        }
+        my $join_args = build_join_argument_string(@ports);
+
+        my $TMPDIR = $ENV{TMPDIR};
+
+        my $cmd =
+qq[$crdb_bin start $secure_flag --store=$TMPDIR/$node --host=localhost --port=$port --http-port=$http_port  --join=$join_args];
+
+        say qq[DEBUG:\n$cmd\n]   if $DEBUG;
+        say qq[VERBOSE:\n$cmd\n] if $VERBOSE;
+
+        do {
+            my $pid = fork();
+            if ( $pid == 0 ) {
+
+                # Child
+                exec $cmd;
+            }
+            elsif ( $pid == -1 ) {
+                die qq[FORK FAILED: $!\n];
+            }
+            else {
+                # Parent
+                waitpid( $pid, WNOHANG );
+            }
+        } unless $DEBUG;
+    }
+}
+
+sub maybe_init_cluster {
+    my $cmd =
+      qq[$crdb_bin init $secure_flag --host=localhost --port=$crdb_port];
+    my $TMPDIR = $ENV{TMPDIR};
+    my @ns     = 0 .. $nodes - 1;
+    my @nodes  = map { qq[$TMPDIR/node$_] } @ns;
+
+    if ($DEBUG) {
+        say qq[DEBUG:\n$cmd\n];
+    }
+    else {
+        say qq[VERBOSE:\n$cmd\n] if $VERBOSE;
+        system $cmd;
+    }
+}
+
+sub port_in_use_p {
+
+    # http://www.perlmonks.org/?node_id=759131
+    my $port    = shift;
+    my $host    = 'localhost';
+    my $timeout = 30;
+    my $proto   = getprotobyname('tcp');
+    my $iaddr   = inet_aton($host);
+    my $paddr   = sockaddr_in( $port, $iaddr );
+
+    socket( SOCKET, PF_INET, SOCK_STREAM, $proto ) || warn "socket: $!";
+
+    eval {
+        local $SIG{ALRM} = sub { die "timeout" };
+        alarm($timeout);
+        connect( SOCKET, $paddr ) || error();
+        alarm(0);
+    };
+
+    if ($@) {
+        close SOCKET || warn "close: $!";
+
+        # print "$hostname is NOT listening on tcp port $portnumber.\n";
+        return 0;
+    }
+    else {
+        close SOCKET || warn "close: $!";
+
+        # print "$hostname is listening on tcp port $portnumber.\n";
+        return 1;
+    }
+}
+
+start_nodes($nodes);
+sleep 3 unless $DEBUG;    # Nodes need time to start up
+maybe_init_cluster();

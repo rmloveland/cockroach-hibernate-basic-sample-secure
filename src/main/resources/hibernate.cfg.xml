@@ -6,7 +6,7 @@
     <session-factory>
         <!-- Database connection settings -->
         <property name="connection.driver_class">org.postgresql.Driver</property>
-        <property name="connection.url">jdbc:postgresql://127.0.0.1:26257/bank?sslmode=disable</property>
+        <property name="connection.url"><![CDATA[jdbc:postgresql://localhost:26257/bank?sslcert=/tmp/certs/node.der&sslkey=/tmp/certs/node.key.pk8&sslmode=verify-full&sslrootcert=/tmp/certs/ca.crt&sslfactory=org.postgresql.ssl.NonValidatingFactory&user=maxroach&password=foo]]></property>
         <property name="connection.username">root</property>
 
         <!-- SQL dialect -->

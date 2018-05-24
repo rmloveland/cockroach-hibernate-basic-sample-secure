@@ -1,4 +1,10 @@
-CERTS_DIR = /tmp/certs
+CERTS_DIR=/tmp/certs
+JAVA_CERT_ALIAS=cockroach
+CLUSTER_NAME=rich-java-ssl-test
+
+# how to get this automagically?
+# perhaps you will need to grep the IPs from the output of `roachprod create`?
+GATEWAY_NODE_IP=
 
 all: run clean
 
@@ -6,30 +12,44 @@ run: privs
 	gradle run
 
 privs: database
-	cockroach sql --certs-dir=$(CERTS_DIR) -e 'GRANT ALL ON DATABASE bank TO maxroach'
+    roachprod sql $(CLUSTER_NAME):1 --secure -- -e 'GRANT ALL ON DATABASE bank TO maxroach'
 
 database: user
-	cockroach sql --certs-dir=$(CERTS_DIR) -e 'CREATE DATABASE bank'
+    roachprod sql $(CLUSTER_NAME):1 --secure -- -e 'CREATE DATABASE bank'
 
 user: cluster
-	cockroach user --certs-dir=$(CERTS_DIR) set maxroach --password && sleep 5
+	roachprod sql $(CLUSTER_NAME):1 --secure -- -e "CREATE USER IF NOT EXISTS maxroach WITH PASSWORD 'foo'"
 
-cluster: convert-certs
-	perl bin/start-local-cluster --nodes=3 --secure
+store-certs: convert-certs
+	sudo keytool -importcert -v -trustcacerts -alist $(JAVA_CERT_ALIAS) -file $(CERTS_DIR)/node.der -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt
 
-convert-certs: certs
+convert-certs: unwrap-certs
 	cd $(CERTS_DIR) && \
 	openssl x509 -in node.crt -inform pem -outform der -out node.der && \
 	openssl pkcs8 -topk8 -inform PEM -outform DER -in node.key -out node.key.pk8 -nocrypt
 
-certs:
-	perl bin/gen-cluster-certs src/main/resources/certs.conf
+unwrap-certs: fetch-certs
+	cd /tmp && tar xvf certs.tar
 
-clean:
-	perl bin/stop-local-cluster && rm -rf $(CERTS_DIR)
+fetch-certs: start-cluster
+	cd /tmp && roachprod get $(CLUSTER_NAME):1 certs.tar
 
-update-deps:
-	cp ${HOME}/work/code/start-local-cluster/start-local-cluster.pl bin/start-local-cluster && \
-	cp ${HOME}/work/code/start-local-cluster/stop-local-cluster.pl bin/stop-local-cluster && \
-	cp ${HOME}/work/code/gen-certs/gen-cluster-certs bin/gen-cluster-certs && \
-	chmod -R 755 bin
+start-cluster: push-binaries
+	roachprod start $(CLUSTER_NAME) --secure
+
+push-binaries: fetch-binaries
+	roachprod put $(CLUSTER_NAME) cockroach-v2.0.2.linux-amd64/cockroach
+
+fetch-binaries: create-cluster
+	cd ~/Downloads && \
+	wget -qO- https://binaries.cockroachdb.com/cockroach-v2.0.2.linux-amd64.tgz | tar  xvz
+
+create-cluster:
+	roachprod create $(CLUSTER_NAME)
+
+clean: remove-temp-cert
+	roachprod destroy $(CLUSTER_NAME) && \
+	rm -rf $(CERTS_DIR)
+
+remove-temp-cert:
+	sudo keytool -v -delete -alist $(JAVA_CERT_ALIAS) -file /tmp/certs/node.der -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt

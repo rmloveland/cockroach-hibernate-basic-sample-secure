@@ -23,7 +23,7 @@ user: store-certs
 	roachprod sql $(CLUSTER_NAME):1 --secure -- -e "CREATE USER IF NOT EXISTS maxroach WITH PASSWORD 'foo'"
 
 store-certs: convert-certs
-	sudo keytool -importcert -v -trustcacerts -alias $(JAVA_CERT_ALIAS) -file $(CERTS_DIR)/node.der -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt
+	sudo keytool -importcert -v -trustcacerts -alias $(JAVA_CERT_ALIAS) -file $(CERTS_DIR)/node.der -keystore $$JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt
 
 convert-certs: unwrap-certs
 	cd $(CERTS_DIR) && \

@@ -17,7 +17,7 @@ privs: database
 database: user
     roachprod sql $(CLUSTER_NAME):1 --secure -- -e 'CREATE DATABASE bank'
 
-user: cluster
+user: store-certs
 	roachprod sql $(CLUSTER_NAME):1 --secure -- -e "CREATE USER IF NOT EXISTS maxroach WITH PASSWORD 'foo'"
 
 store-certs: convert-certs

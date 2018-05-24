@@ -1,6 +1,7 @@
 .gradle/
 build/
 *~
+*.bak
 
 # Compiled class file
 *.class

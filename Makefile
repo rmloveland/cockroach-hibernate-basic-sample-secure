@@ -1,6 +1,8 @@
-CERTS_DIR=/tmp/certs
-JAVA_CERT_ALIAS=cockroach
-CLUSTER_NAME=rich-java-ssl-test
+TMP_DIR			= /tmp
+CERTS_DIR		= $(TMP_DIR)/certs
+JAVA_CERT_ALIAS	= cockroach
+USERNAME		= rich
+CLUSTER_NAME	= $(USERNAME)-java-ssl-test
 
 # how to get this automagically?
 # perhaps you will need to grep the IPs from the output of `roachprod create`?
@@ -29,20 +31,20 @@ convert-certs: unwrap-certs
 	openssl pkcs8 -topk8 -inform PEM -outform DER -in node.key -out node.key.pk8 -nocrypt
 
 unwrap-certs: fetch-certs
-	cd /tmp && tar xvf certs.tar
+	cd $(TMP_DIR) && tar xvf certs.tar
 
 fetch-certs: start-cluster
-	cd /tmp && roachprod get $(CLUSTER_NAME):1 certs.tar
+	cd $(TMP_DIR) && roachprod get $(CLUSTER_NAME):1 certs.tar
 
 start-cluster: push-binaries
 	roachprod start $(CLUSTER_NAME) --secure
 
 push-binaries: fetch-binaries
-	cd ~/Downloads && \
+	cd $(TMP_DIR) && \
     roachprod put $(CLUSTER_NAME) cockroach-v2.0.2.linux-amd64/cockroach
 
 fetch-binaries: create-cluster
-	cd ~/Downloads && \
+	cd $(TMP_DIR) && \
 	wget -qO- https://binaries.cockroachdb.com/cockroach-v2.0.2.linux-amd64.tgz | tar  xvz
 
 create-cluster:

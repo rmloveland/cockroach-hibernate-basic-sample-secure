@@ -38,7 +38,8 @@ start-cluster: push-binaries
 	roachprod start $(CLUSTER_NAME) --secure
 
 push-binaries: fetch-binaries
-	roachprod put $(CLUSTER_NAME) cockroach-v2.0.2.linux-amd64/cockroach
+	cd ~/Downloads && \
+    roachprod put $(CLUSTER_NAME) cockroach-v2.0.2.linux-amd64/cockroach
 
 fetch-binaries: create-cluster
 	cd ~/Downloads && \

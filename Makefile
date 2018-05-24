@@ -4,14 +4,14 @@ JAVA_CERT_ALIAS	= cockroach
 USERNAME		= rich
 CLUSTER_NAME	= $(USERNAME)-java-ssl-test
 
-# how to get this automagically?
-# perhaps you will need to grep the IPs from the output of `roachprod create`?
-GATEWAY_NODE_IP=
-
 all: run clean
 
 run: privs
 	gradle run
+
+update-hibernate-cfg:
+	_CLUSTER_IP=$(shell $(roachprod list -d | grep 'rich' | perl -lanE 'say $1 if /\b(35\..+)$/' | xargs | perl -lanE '@x=split / /, $_; say $x[0]')) && \
+	perl -pie -i.bak -lanE 's/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/$(_CLUSTER_IP)/' src/main/resources/hibernate.cfg.xml
 
 privs: database
     roachprod sql $(CLUSTER_NAME):1 --secure -- -e 'GRANT ALL ON DATABASE bank TO maxroach'

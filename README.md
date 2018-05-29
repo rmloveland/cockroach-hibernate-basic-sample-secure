@@ -1,16 +1,17 @@
 # CockroachDB Hibernate Basic Sample - Secure (tm)
 
-**NOTE #1**: This doesn't actually work yet.  Right now it's trying to
+**NOTE**: This doesn't actually work yet.  Right now it's trying to
 capture a description of tasks in the Makefile.  There is still work
 to do here.
 
-**NOTE #2**: This is not an official repo of Cockroach Labs.  I work
+**NOTE**: This is not an official repo of Cockroach Labs.  I work
 there, but this is me trying to figure some things out before they
 make their way into the actual docs.  For officially supported
 content, [read the docs][docs].
 
-This repo has an example of how to connect to a CockroachDB cluster
-from Java using Hibernate.
+This repo will at some point have an example of how to connect to a
+secure CockroachDB cluster from Java using Hibernate.  For now, you
+can probably ignore it because everything is wrong.
 
 ## HOW IT WORKS
 
@@ -33,10 +34,10 @@ For exact details of its operation, see the Makefile.
 
 ## CAVEATS
 
-As noted above, this doesn't quite work yet.  And it definitely isn't ready for
-someone else to use.  For example, it uses some hardcoded variables
-such as my username.  Right now the Makefile is meant to be a
-description of the process, a.k.a. documentation.
+As noted above, this doesn't quite work yet.  And it definitely isn't
+ready for someone else to use.  For example, it uses hardcoded
+variables such as my username.  Right now the Makefile is meant to be
+a description of the process, a.k.a. documentation.
 
 ## USAGE
 

@@ -7,14 +7,7 @@
         <!-- Database connection settings -->
         <property name="connection.driver_class">org.postgresql.Driver</property>
         <!-- FIXME: figure out how to populate the below IP automagically -->
-        <property name="connection.url"><![CDATA[jdbc:postgresql://35.227.71.234:26257/bank?ssl=true&sslcert=/tmp/certs/node.der&sslfactory=org.postgresql.ssl.NonValidatingFactory]]></property>
+        <property name="connection.url"><![CDATA[jdbc:postgresql://localhost:26257/bank?ssl=true&sslcert=/tmp/certs/client.maxroach.crt&sslkey=/tmp/certs/client.maxroach.pk8&sslrootcert=/tmp/certs/ca.crt&sslfactory=org.postgresql.ssl.NonValidatingFactory]]></property>
         <property name="connection.username">maxroach</property>
-        <property name="connection.password">foo</property>
-
-        <!-- SQL dialect -->
-        <property name="dialect">org.hibernate.dialect.PostgreSQL94Dialect</property>
-
-        <!-- Delete and recreate the database schema on startup, destroying previous data. -->
-        <property name="hbm2ddl.auto">create</property>
     </session-factory>
 </hibernate-configuration>

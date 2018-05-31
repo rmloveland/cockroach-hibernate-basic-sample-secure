@@ -47,7 +47,7 @@ NOTE: this is unofficial, and also it doesn't actually work yet.
         $ openssl x509 -in client.maxroach.crt -inform pem -outform der -out client.maxroach.der
         $ openssl pkcs8 -topk8 -inform PEM -outform DER -in client.maxroach.key -out client.maxroach.pk8 -nocrypt
 
-9. Edit the Hibernate config at C<src/main/resources/hibernate.cfg.xml> to use the locally generated certificates.
+9. Edit the Hibernate config at `src/main/resources/hibernate.cfg.xml` to use the locally generated certificates.
 
         <?xml version='1.0' encoding='utf-8'?>
         <!DOCTYPE hibernate-configuration PUBLIC

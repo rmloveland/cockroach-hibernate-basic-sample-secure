@@ -1,20 +1,20 @@
-#!/usr/bin/env perl
+#!/usr/bin/env perl -s
 
 use strict;
 use warnings;
 use autodie;
 use experimentals;
-use Config::INI::Reader;
+use Config::Tiny;
 use Data::Dumper;
 
-die qq[Usage: gen-cluster-certs [FILE.CONF]] unless scalar @ARGV > 0;
-my $ini_file = shift;
+our ( $local, $debug, $verbose, $config );
 
-$ini_file //= qq[$ENV{HOME}/.gen-cluster-certs.conf];
+die qq[Usage: gen-cluster-certs [-local,-debug,-verbose] [-config=FILE.CONF]]
+  unless scalar @ARGV >= 0;
 
-my $DEBUG   = 0;
-my $VERBOSE = 0;
-$VERBOSE++ if $DEBUG;
+$config //= qq[$ENV{HOME}/.gen-cluster-certs.conf];
+
+$verbose++ if $debug;
 
 my $version = $ENV{COCKROACH_VERSION};
 $version = '2.0' unless defined $version;
@@ -22,9 +22,7 @@ $version = '2.0' unless defined $version;
 my $crdb_bin   = qq[$ENV{HOME}/work/binaries/v$version/cockroach];
 my $cmd_prefix = qq[$crdb_bin cert];
 
-my $config = Config::INI::Reader->read_file($ini_file);
-
-say Dumper $config if $DEBUG;
+$config = Config::Tiny->read($config);
 
 # https://www.cockroachlabs.com/docs/stable/create-security-certificates.html
 
@@ -38,12 +36,13 @@ my $certs_dir = $config->{certs_dir}->{location};
 my $create_ca =
   qq[$cmd_prefix $config->{ca}->{cmd} --certs-dir=$certs_dir --ca-key=$ca_key];
 
-say $create_ca if $VERBOSE;
-unless ($DEBUG) {
+say $create_ca if $verbose;
+unless ($debug) {
 
     # You don't need to create a CA.CRT if it already exists
     unless ( -e $ca_key ) {
-        system $create_ca;
+        say $create_ca if $debug;
+        system $create_ca unless $debug;
     }
 }
 
@@ -54,15 +53,29 @@ my @nodes = keys %$nodes;
 @nodes = grep { $_ !~ /cmd/ } @nodes;
 
 for my $node (@nodes) {
+
+    my $hostname = '';
+    if ($local) {
+        chomp( my $uname = `uname -n` );
+        $hostname = $uname;
+    }
     my $create_node =
-qq[$cmd_prefix $config->{nodes}->{cmd} $config->{nodes}->{$node} --certs-dir=$certs_dir --ca-key=$ca_key --overwrite];
-    say $create_node if $VERBOSE;
-    system $create_node unless $DEBUG;
+qq[$cmd_prefix $config->{nodes}->{cmd} $config->{nodes}->{$node} $hostname --certs-dir=$certs_dir --ca-key=$ca_key --overwrite];
+    say $create_node if $verbose;
+    system $create_node unless $debug;
 }
 
 # create client cert
 
-my $create_client =
-qq[$cmd_prefix $config->{client}->{cmd} root --certs-dir=$certs_dir --ca-key=$ca_key];
-say $create_client if $VERBOSE;
-system $create_client unless $DEBUG;
+my $users = $config->{client}->{users};
+
+my @users = split /,/, $users;
+
+for my $user (@users) {
+
+    my $create_client =
+qq[$cmd_prefix $config->{client}->{cmd} $user --certs-dir=$certs_dir --ca-key=$ca_key];
+    say $create_client if $debug;
+    system $create_client unless $debug;
+
+}

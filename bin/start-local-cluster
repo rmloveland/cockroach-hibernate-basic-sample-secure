@@ -33,7 +33,9 @@ if ($help_wanted) {
     exit;
 }
 
-my $TMPDIR = $ENV{TMPDIR};
+$VERBOSE++ if $DEBUG;
+
+my $TMPDIR = qq[/tmp];    # $ENV{TMPDIR} was too long and noisy
 $TMPDIR =~ s{/$}{};
 
 $ENV{COCKROACH_PORT} //= 26257;
@@ -73,12 +75,9 @@ sub start_nodes {
         }
         my $join_args = build_join_argument_string(@ports);
 
-        my $TMPDIR = $ENV{TMPDIR};
-
         my $cmd =
 qq[$crdb_bin start $secure_flag --store=$TMPDIR/$node --host=localhost --port=$port --http-port=$http_port  --join=$join_args];
 
-        say qq[DEBUG:\n$cmd\n]   if $DEBUG;
         say qq[VERBOSE:\n$cmd\n] if $VERBOSE;
 
         do {
@@ -102,9 +101,8 @@ qq[$crdb_bin start $secure_flag --store=$TMPDIR/$node --host=localhost --port=$p
 sub maybe_init_cluster {
     my $cmd =
       qq[$crdb_bin init $secure_flag --host=localhost --port=$crdb_port];
-    my $TMPDIR = $ENV{TMPDIR};
-    my @ns     = 0 .. $nodes - 1;
-    my @nodes  = map { qq[$TMPDIR/node$_] } @ns;
+    my @ns = 0 .. $nodes - 1;
+    my @nodes = map { qq[$TMPDIR/node$_] } @ns;
 
     if ($DEBUG) {
         say qq[DEBUG:\n$cmd\n];

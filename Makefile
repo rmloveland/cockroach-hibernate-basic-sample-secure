@@ -2,9 +2,9 @@ TMP_DIR			= /tmp
 CERTS_DIR		= $(TMP_DIR)/certs
 JAVA_CERT_ALIAS = cockroach
 
-all: create-database
+all: run
 
-run:
+run: create-database
 	gradle run
 
 create-database: create-cluster

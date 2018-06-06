@@ -1,7 +1,8 @@
 # CockroachDB Hibernate Basic Sample - Secure (tm)
 
-NOTE: this is unofficial, and also it doesn't actually work yet.
+NOTE: this is unofficial - no warranties.
 
+Manual instructions:
 
 1. Create certs for the cluster
 
@@ -47,22 +48,6 @@ NOTE: this is unofficial, and also it doesn't actually work yet.
         $ openssl x509 -in client.maxroach.crt -inform pem -outform der -out client.maxroach.der
         $ openssl pkcs8 -topk8 -inform PEM -outform DER -in client.maxroach.key -out client.maxroach.pk8 -nocrypt
 
-9. Edit the Hibernate config at `src/main/resources/hibernate.cfg.xml` to use the locally generated certificates.
-
-        <?xml version='1.0' encoding='utf-8'?>
-        <!DOCTYPE hibernate-configuration PUBLIC
-                "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
-                "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
-        <hibernate-configuration>
-            <session-factory>
-                <!-- Database connection settings -->
-                <property name="connection.driver_class">org.postgresql.Driver</property>
-                <!-- FIXME: figure out how to populate the below IP automagically -->
-                <property name="connection.url"><![CDATA[jdbc:postgresql://localhost:26257/bank?ssl=true&sslcert=/tmp/certs/client.maxroach.crt&sslkey=/tmp/certs/client.maxroach.pk8&sslrootcert=/tmp/certs/ca.crt&sslfactory=org.postgresql.ssl.NonValidatingFactory]]></property>
-                <property name="connection.username">maxroach</property>
-            </session-factory>
-        </hibernate-configuration>
-
-10. Run the Java code
+9. Run the Java code
 
         $ gradle run

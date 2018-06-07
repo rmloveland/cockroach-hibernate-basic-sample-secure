@@ -11,32 +11,14 @@ import javax.persistence.Table;
 import javax.persistence.criteria.CriteriaQuery;
 
 public class Sample {
+
     // Create a SessionFactory based on our hibernate.cfg.xml configuration
     // file, which defines how to connect to the database.
-    private static final Configuration config = new Configuration()
-        .setProperty(
-                     "hibernate.connection.url",
-                     "jdbc:postgresql://localhost:26257/bank?ssl=true&sslmode=require&sslrootcert=/tmp/certs/ca.crt&sslkey=/tmp/certs/client.maxroach.pk8&sslcert=/tmp/certs/client.maxroach.crt"
-                     )
-        .setProperty("hibernate.connection.username", "maxroach")
-        .setProperty("hibernate.show_sql", "true")
-        .setProperty("hibernate.format_sql", "true")
-        .setProperty("hibernate.use_sql_comments", "true")
-        .setProperty("hibernate.hbm2ddl.auto", "create")
-        .setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
-
-    /*
-      // These don't work via `setProperty`, but do work from the connection URL (as above).
-      .setProperty("ssl", "true")
-      .setProperty("sslmode", "require")
-      .setProperty("sslrootcert", "/tmp/certs/ca.crt")
-      .setProperty("sslkey", "/tmp/certs/client.maxroach.pk8")
-      .setProperty("sslcert", "/tmp/certs/client.maxroach.crt")
-      .setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory")
-    */
-
     private static final SessionFactory sessionFactory =
-        config.addAnnotatedClass(Account.class).buildSessionFactory();
+            new Configuration()
+                    .configure("hibernate.cfg.xml")
+                    .addAnnotatedClass(Account.class)
+                    .buildSessionFactory();
 
     // Account is our model, which corresponds to the "accounts" database table.
     @Entity

@@ -26,7 +26,8 @@ gen-certs:
 clean:
 	rm -rf $(CERTS_DIR) && \
 	rm -rf $(TMP_DIR)/node* && \
-    perl bin/stop-local-cluster
+    perl bin/stop-local-cluster && \
+	gradle clean
 
 # Internal
 
